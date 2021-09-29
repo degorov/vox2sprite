@@ -1,0 +1,49 @@
+{
+  "name": "vox2sprite",
+  "version": "0.1.0",
+  "description": "A small tool to render voxel models to pixel art sprites",
+  "keywords": [
+    "voxels",
+    "pixel art",
+    "rendering"
+  ],
+  "license": "MIT",
+  "author": "Dmitry Egorov <mail@degorov.com>",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "bin": "./bin/vox2sprite.js",
+  "scripts": {
+    "start": "node ./bin/vox2sprite.js",
+    "watch": "npm run build -- -w",
+    "build": "tsc",
+    "clean": "rimraf bin/*",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/degorov/vox2sprite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/degorov/vox2sprite/issues"
+  },
+  "homepage": "https://github.com/degorov/vox2sprite#readme",
+  "devDependencies": {
+    "@tsconfig/node14": "^1.0.1",
+    "@types/color": "^3.0.2",
+    "@types/node": "^12.12.6",
+    "@types/pngjs": "^6.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.32.0",
+    "@typescript-eslint/parser": "^4.32.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "prettier": "^2.4.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "color": "^4.0.1",
+    "pngjs": "^6.0.0"
+  }
+}
