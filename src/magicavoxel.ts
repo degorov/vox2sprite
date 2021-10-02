@@ -1,20 +1,14 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 
-import ColorLib from 'color';
-import { PNG as PngLib } from 'pngjs';
-
-type VoxData = {
-  models: Model[];
-  palette: Color[];
-};
-
-type Model = {
+export type Model = {
+  frame: number;
   sizeX: number;
   sizeY: number;
   sizeZ: number;
   sizeU: number;
   sizeV: number;
   voxels: Voxel[];
+  palette: Color[];
 };
 
 type Voxel = {
@@ -29,42 +23,6 @@ type Color = {
   g: number;
   b: number;
   a: number;
-};
-
-enum Side {
-  East = 0,
-  South,
-  West,
-  North,
-}
-
-enum Face {
-  Top = 0,
-  Right,
-  Left,
-}
-
-type Triangle = {
-  face: Face;
-  colorIndex: number;
-};
-
-type Triangles = {
-  model: Model;
-  side: Side;
-  data: Triangle[][][];
-};
-
-// https://developer.mozilla.org/en-US/docs/Web/API/ImageData
-type ImageData = {
-  width: number;
-  height: number;
-  data: Uint8ClampedArray;
-};
-
-type SpriteSheet = {
-  pixels: ImageData;
-  frameCount: number;
 };
 
 const defaultPalette = [
@@ -120,11 +78,12 @@ export function readVoxFile(voxFileName: string): Buffer {
   return voxFileData;
 }
 
-export function parseVoxData(voxFileData: Buffer): VoxData {
+export function parseVoxData(voxFileData: Buffer): Model[] {
   const models: Model[] = [];
-  let palette: Color[] = [];
+  const palette: Color[] = [];
 
   let currentModel: Model;
+  let currentFrame = 0;
 
   const parseChunk = (offset = 8) => {
     const chunkId = voxFileData.toString('ascii', offset, offset + 4);
@@ -137,12 +96,14 @@ export function parseVoxData(voxFileData: Buffer): VoxData {
         const sizeY = voxFileData.readUInt32LE(offset + 16);
         const sizeZ = voxFileData.readUInt32LE(offset + 20);
         currentModel = {
+          frame: currentFrame++,
           sizeX,
           sizeY,
           sizeZ,
           voxels: [],
           sizeU: sizeX + sizeY,
           sizeV: sizeX + sizeY + sizeZ * 2,
+          palette,
         };
         models.push(currentModel);
       } else if (chunkId === 'XYZI') {
@@ -157,7 +118,6 @@ export function parseVoxData(voxFileData: Buffer): VoxData {
           });
         }
       } else if (chunkId === 'RGBA') {
-        palette = [];
         for (let c = 0; c < 255; c++) {
           const dataOffset = offset + 12 + c * 4;
           palette[c + 1] = {
@@ -183,196 +143,15 @@ export function parseVoxData(voxFileData: Buffer): VoxData {
   parseChunk();
 
   if (palette.length === 0) {
-    palette = defaultPalette.map((hexColor) => {
-      return {
+    defaultPalette.forEach((hexColor) => {
+      palette.push({
         r: hexColor & 0x000000ff,
         g: (hexColor & 0x0000ff00) >>> 8,
         b: (hexColor & 0x00ff0000) >>> 16,
         a: (hexColor & 0xff000000) >>> 24,
-      };
+      });
     });
   }
 
-  return { models, palette };
-}
-
-export function renderTriangles(model: Model, side: Side): Triangles {
-  const offsetU = side % 2 ? model.sizeX - 1 : model.sizeY - 1;
-  const offsetV = model.sizeV - 4;
-  const offsetW = model.sizeZ - 1;
-
-  const triangles: Triangle[][][] = new Array(model.sizeU);
-  for (let u = 0; u < model.sizeU; u++) {
-    triangles[u] = new Array(model.sizeV - 1);
-    for (let v = 0; v < model.sizeV - 1; v++) {
-      triangles[u][v] = [];
-    }
-  }
-
-  for (const voxel of model.voxels) {
-    let vX, vY;
-
-    if (side === 0) {
-      vX = voxel.x;
-      vY = voxel.y;
-    } else if (side === 1) {
-      vX = voxel.y;
-      vY = model.sizeX - voxel.x - 1;
-    } else if (side === 2) {
-      vX = model.sizeX - voxel.x - 1;
-      vY = model.sizeY - voxel.y - 1;
-    } else {
-      vX = model.sizeY - voxel.y - 1;
-      vY = voxel.x;
-    }
-
-    const u = offsetU + vX - vY;
-    const v = offsetV - vX - vY - 2 * voxel.z;
-    const w = offsetW + vX + vY - voxel.z;
-
-    triangles[u][v][w] = triangles[u + 1][v][w] = {
-      colorIndex: voxel.colorIndex,
-      face: Face.Top,
-    };
-
-    triangles[u][v + 1][w] = triangles[u][v + 2][w] = {
-      colorIndex: voxel.colorIndex,
-      face: Face.Left,
-    };
-
-    triangles[u + 1][v + 1][w] = triangles[u + 1][v + 2][w] = {
-      colorIndex: voxel.colorIndex,
-      face: Face.Right,
-    };
-  }
-
-  return {
-    model,
-    side,
-    data: triangles,
-  };
-}
-
-export function renderPixels(triangles: Triangles, palette: Color[]): ImageData {
-  const model = triangles.model;
-
-  const pixelWidth = model.sizeU * 2;
-  const pixelHeight = model.sizeV;
-
-  const pixels: ImageData = {
-    width: pixelWidth,
-    height: pixelHeight,
-    data: new Uint8ClampedArray(pixelWidth * pixelHeight * 4),
-  };
-
-  const putDoubleHeightPixel = (
-    x: number,
-    y: number,
-    r: number,
-    g: number,
-    b: number,
-    a: number,
-  ) => {
-    [(pixels.width * y + x) * 4, (pixels.width * (y + 1) + x) * 4].forEach((idx) => {
-      pixels.data[idx] = r;
-      pixels.data[idx + 1] = g;
-      pixels.data[idx + 2] = b;
-      pixels.data[idx + 3] = a;
-    });
-  };
-
-  let rightSide, leftSide;
-
-  if (triangles.side % 2) {
-    rightSide = model.sizeY;
-    leftSide = model.sizeX;
-  } else {
-    rightSide = model.sizeX;
-    leftSide = model.sizeY;
-  }
-
-  for (let u = 0; u < triangles.data.length; u++) {
-    const startV = Math.max(rightSide - u - 1, u - rightSide);
-    const endV = model.sizeV - Math.max(leftSide - u - 1, u - leftSide) - 1;
-
-    for (let v = startV; v < endV; v++) {
-      const ray = triangles.data[u][v].filter(Boolean);
-      if (ray.length > 0) {
-        const triangle = ray[0];
-        const triangleColor = palette[triangle.colorIndex];
-
-        const [pxR, pxG, pxB, pxA] = [
-          ...ColorLib.rgb(triangleColor.r, triangleColor.g, triangleColor.b)
-            .darken(triangle.face / 3)
-            .rgb()
-            .array(),
-          triangleColor.a,
-        ];
-
-        const pxToggle = rightSide % 2 ^ v % 2 ^ u % 2;
-        putDoubleHeightPixel(u * 2 + pxToggle, v, pxR, pxG, pxB, pxA);
-      }
-    }
-  }
-
-  return pixels;
-}
-
-export function renderSpriteSheet(voxData: VoxData): SpriteSheet {
-  const frameCount = voxData.models.length;
-
-  const spriteSheetWidth = 8 * Math.max(...voxData.models.map((m) => m.sizeU));
-  const spriteSheetHeight = frameCount * Math.max(...voxData.models.map((m) => m.sizeV));
-
-  const spriteSheet: SpriteSheet = {
-    pixels: {
-      width: spriteSheetWidth,
-      height: spriteSheetHeight,
-      data: new Uint8ClampedArray(spriteSheetWidth * spriteSheetHeight * 4),
-    },
-    frameCount,
-  };
-
-  for (let modelIndex = 0; modelIndex < frameCount; modelIndex++) {
-    const model = voxData.models[modelIndex];
-    [Side.East, Side.South, Side.West, Side.North].forEach((side) => {
-      const chunkPixels = renderPixels(renderTriangles(model, side), voxData.palette);
-      for (
-        let pos = 0, line = 0;
-        pos < chunkPixels.data.length;
-        pos += chunkPixels.width * 4, line++
-      ) {
-        spriteSheet.pixels.data.set(
-          chunkPixels.data.subarray(pos, pos + chunkPixels.width * 4),
-          side * spriteSheet.pixels.width +
-            line * spriteSheet.pixels.width * 4 +
-            modelIndex * spriteSheet.pixels.width * spriteSheet.pixels.height,
-        );
-      }
-    });
-  }
-
-  return spriteSheet;
-}
-
-export function writePngFile(pixels: ImageData, pngFileName: string): void {
-  const pngData = new PngLib({
-    width: pixels.width,
-    height: pixels.height,
-  });
-  pngData.data = Buffer.from(pixels.data);
-
-  writeFileSync(pngFileName, PngLib.sync.write(pngData));
-}
-
-export function writeJsonFile(spriteSheet: SpriteSheet, jsonFileName: string): void {
-  writeFileSync(jsonFileName, JSON.stringify({ spriteSheet }));
-}
-
-export default function vox2sprite(
-  voxFileName: string,
-  pngFileName: string,
-  jsonFileName: string,
-): void {
-  writePngFile(renderSpriteSheet(parseVoxData(readVoxFile(voxFileName))).pixels, pngFileName);
+  return models;
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import vox2sprite from './magicavoxel';
+import vox2sprite from './spritesheet';
 
 const files = [
   '7-7-7.vox',
@@ -39,5 +39,5 @@ const files = [
 ];
 
 for (const fileName of files) {
-  vox2sprite(`./vox/${fileName}`, `./out/${fileName}.png`, '');
+  vox2sprite(`./vox/${fileName}`, `./out/${fileName}.png`);
 }
