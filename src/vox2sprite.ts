@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { MagicaVoxel } from './magicavoxel';
+import vox2sprite from './magicavoxel';
 
 const files = [
   '7-7-7.vox',
@@ -39,5 +39,5 @@ const files = [
 ];
 
 for (const fileName of files) {
-  new MagicaVoxel(`./vox/${fileName}`).renderTo(`./out/${fileName}.png`);
+  vox2sprite(`./vox/${fileName}`, `./out/${fileName}.png`, '');
 }

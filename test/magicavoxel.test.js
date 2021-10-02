@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { readFileSync, unlinkSync } = require('fs');
-const { MagicaVoxel } = require('../bin/magicavoxel');
+const vox2sprite = require('../bin/magicavoxel').default;
 
 describe('End-to-end testing', () => {
   ['7-7-7', '7-7-8', '7-8-7', '7-8-8', '8-7-7', '8-7-8', '8-8-7', '8-8-8', 'horse'].forEach(
     (testName) => {
       // eslint-disable-next-line jest/valid-title
       test(testName, () => {
+        const voxFileName = `${__dirname}/${testName}.vox`;
+        const tmpFileName = `${__dirname}/${testName}.tmp`;
+        const pngFileName = `${__dirname}/${testName}.png`;
         try {
-          new MagicaVoxel(`${__dirname}/${testName}.vox`).renderTo(`${__dirname}/${testName}.tmp`);
-          expect(readFileSync(`${__dirname}/${testName}.tmp`)).toEqual(
-            readFileSync(`${__dirname}/${testName}.png`),
-          );
+          vox2sprite(voxFileName, tmpFileName);
+          expect(readFileSync(tmpFileName)).toEqual(readFileSync(pngFileName));
         } finally {
-          unlinkSync(`${__dirname}/${testName}.tmp`);
+          unlinkSync(tmpFileName);
         }
       });
     },
