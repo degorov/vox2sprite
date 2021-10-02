@@ -1,6 +1,6 @@
 {
   "name": "vox2sprite",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A small tool to render voxel models to pixel art sprites",
   "keywords": [
     "voxels",
@@ -10,15 +10,12 @@
   "license": "MIT",
   "author": "Dmitry Egorov <mail@degorov.com>",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=12.0.0"
   },
   "bin": "./bin/vox2sprite.js",
   "scripts": {
-    "watch": "tsc -w",
-    "clean": "rimraf bin/*",
-    "prestart": "tsc",
+    "build": "rimraf bin/* && tsc",
     "start": "node ./bin/vox2sprite.js",
-    "pretest": "tsc",
     "test": "jest"
   },
   "repository": {
@@ -30,7 +27,7 @@
   },
   "homepage": "https://github.com/degorov/vox2sprite#readme",
   "devDependencies": {
-    "@tsconfig/node14": "^1.0.1",
+    "@tsconfig/node12": "^1.0.9",
     "@types/color": "^3.0.2",
     "@types/node": "^12.12.6",
     "@types/pngjs": "^6.0.1",
