@@ -1,7 +1,7 @@
 {
   "name": "vox2sprite",
-  "version": "0.3.0",
-  "description": "A small tool to render voxel models to pixel art sprites",
+  "version": "0.4.0",
+  "description": "A small tool to render voxel models to pixel art spritesheets",
   "keywords": [
     "voxels",
     "pixel art",
@@ -29,6 +29,7 @@
   "devDependencies": {
     "@tsconfig/node12": "^1.0.9",
     "@types/color": "^3.0.2",
+    "@types/minimist": "^1.2.2",
     "@types/node": "^12.12.6",
     "@types/pngjs": "^6.0.1",
     "@typescript-eslint/eslint-plugin": "^4.32.0",
@@ -44,6 +45,7 @@
   },
   "dependencies": {
     "color": "^4.0.1",
+    "minimist": "^1.2.5",
     "pngjs": "^6.0.0"
   }
 }

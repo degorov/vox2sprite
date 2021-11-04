@@ -4,3 +4,4 @@ node_modules/
 bin/
 vox/
 out/
+test/fullsuite.js
