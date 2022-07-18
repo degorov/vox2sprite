@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { PNG as PngLib } from 'pngjs';
 
-import { Model, parseVoxData, readVoxFile } from './magicavoxel';
+import { Model } from './magicavoxel';
 import { prepareTriangles } from './triangles';
 import { ImageData, preparePixels } from './pixels';
 
@@ -57,10 +57,4 @@ export function writePngFile(pixels: ImageData, pngFileName: string): void {
   } catch {
     throw new Error('Error writing file');
   }
-}
-
-export default function (voxFileName: string, pngFileName: string): void {
-  const models = parseVoxData(readVoxFile(voxFileName));
-  const spriteSheet = createSpriteSheet(models);
-  writePngFile(spriteSheet.pixels, pngFileName);
 }

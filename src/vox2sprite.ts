@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 
 import parseArgs from 'minimist';
-import vox2sprite from './spritesheet';
+import { parseVoxData, readVoxFile } from './magicavoxel';
+import { createSpriteSheet, writePngFile } from './spritesheet';
 
-const {
-  _: [inFile, outFile],
-} = parseArgs(process.argv.slice(2));
+export default function vox2sprite(voxFileName: string, pngFileName: string): void {
+  writePngFile(createSpriteSheet(parseVoxData(readVoxFile(voxFileName))).pixels, pngFileName);
+}
 
-if (inFile && outFile) {
-  try {
+if (require.main === module) {
+  const {
+    _: [inFile, outFile],
+  } = parseArgs(process.argv.slice(2));
+
+  if (inFile && outFile) {
     vox2sprite(inFile, outFile);
-  } catch (err) {
-    console.log((err as Error).message);
+  } else {
+    console.info('Usage: vox2sprite voxfile.vox pngfile.png');
   }
-} else {
-  console.info('Usage: vox2sprite voxfile.vox pngfile.png');
 }
