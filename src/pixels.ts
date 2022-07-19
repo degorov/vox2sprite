@@ -1,5 +1,4 @@
-import ColorLib from 'color';
-
+import { hsluvToRgb, rgbToHsluv } from 'hsluv';
 import { Triangles } from './triangles';
 
 // https://developer.mozilla.org/en-US/docs/Web/API/ImageData
@@ -57,11 +56,16 @@ export function preparePixels(triangles: Triangles): ImageData {
         const triangle = ray[0];
         const triangleColor = model.palette[triangle.colorIndex];
 
+        const colorHsluv = rgbToHsluv([
+          triangleColor.r / 256,
+          triangleColor.g / 256,
+          triangleColor.b / 256,
+        ]);
+
+        colorHsluv[2] *= 1 - triangle.face / 3;
+
         const [pxR, pxG, pxB, pxA] = [
-          ...ColorLib.rgb(triangleColor.r, triangleColor.g, triangleColor.b)
-            .darken(triangle.face / 3)
-            .rgb()
-            .array(),
+          ...hsluvToRgb(colorHsluv).map((x) => Math.round(x * 256)),
           triangleColor.a,
         ];
 
